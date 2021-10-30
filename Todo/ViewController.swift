@@ -10,6 +10,9 @@ import UIKit
 class ViewController: UIViewController {
 
     @IBOutlet weak var tableView: UITableView!
+    @IBOutlet var editButton: UIBarButtonItem!
+    var doneButton: UIBarButtonItem?
+    
     var tasks = [Task]() {
         didSet {
             self.saveTasks()
@@ -18,13 +21,28 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.doneButton = UIBarButtonItem(barButtonSystemItem: .done, target: self, action: #selector(doneButtonTap))
         self.tableView.dataSource = self
         self.tableView.delegate = self
         self.loadTasks()
     }
 
+    @objc func doneButtonTap() {
+        // 왼쪽 상단 Done 버튼을 클릭하면
+        // Edit 버튼으로 바꾸고
+        // tableView의 edit모드를 취소시킨다.
+        // 기능: 편집모드를 빠져나옴
+        self.navigationItem.leftBarButtonItem = self.editButton
+        self.tableView.setEditing(false, animated: true)
+    }
 
     @IBAction func tapEditButton(_ sender: UIBarButtonItem) {
+        // 왼쪽상단 Edit 버튼을 누르면
+        // Done 버튼으로 바꾸고
+        // tableView의 edit모드로 전환한다.
+        guard !self.tasks.isEmpty else { return }
+        self.navigationItem.leftBarButtonItem = self.doneButton
+        self.tableView.setEditing(true, animated: true)
     }
     
     
@@ -85,6 +103,33 @@ extension ViewController: UITableViewDataSource {
             cell.accessoryType = .none
         }
         return cell
+    }
+    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        // cell삭제 기능구현 해야함 CH04_06 5:16초
+        // 편집모드에서 어떤 셀에 삭제 버튼이 눌려졌는지 알려줌
+        self.tasks.remove(at: indexPath.row)
+        tableView.deleteRows(at: [indexPath], with: .automatic)
+        
+        if self.tasks.isEmpty {
+            self.doneButtonTap()
+        }
+    }
+    
+    // (편집모드) : true -> 행의 순서 이동이 가능하게 해줌
+    func tableView(_ tableView: UITableView, canMoveRowAt indexPath: IndexPath) -> Bool {
+        return true
+    }
+    // sourceIndexPath: 현재 indexPath
+    // destinationIndexPath: 이동한 indexPath
+    func tableView(_ tableView: UITableView, moveRowAt sourceIndexPath: IndexPath, to destinationIndexPath: IndexPath) {
+        var tasks = self.tasks
+        let task = tasks[sourceIndexPath.row]
+        // 원래 위치의 할 일을 삭제
+        tasks.remove(at: sourceIndexPath.row)
+        // 이동한 위치를 넘겨줌
+        tasks.insert(task, at: destinationIndexPath.row)
+        self.tasks = tasks
     }
 }
 
